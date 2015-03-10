@@ -74,20 +74,6 @@ ox_socket_nodelay(sock fd)
     return setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag));
 }
 
-static int
-ox_socket_block(sock fd)
-{
-    int err;
-    unsigned long ul = false;
-#if defined PLATFORM_WINDOWS
-    err = ioctlsocket(fd, FIONBIO, &ul);
-#else
-    err = ioctl(fd, FIONBIO, &ul);
-#endif
-
-    return err != SOCKET_ERROR;
-}
-
 class SSDBProtocolRequest
 {
 public:
@@ -155,8 +141,19 @@ public:
     {
         return ox_buffer_getreadvalidcount(m_request);
     }
+
+    void            init()
+    {
+        ox_buffer_init(m_request);
+    }
 private:
     buffer_s*   m_request;
+};
+
+struct Bytes
+{
+    const char* buffer;
+    int len;
 };
 
 class SSDBProtocolResponse
@@ -164,19 +161,10 @@ class SSDBProtocolResponse
 public:
     ~SSDBProtocolResponse()
     {
-        for(int i = 0; i < mBuffers.size(); ++i)
-        {
-            ox_buffer_delete(mBuffers[i]);
-        }
     }
 
     void                init()
     {
-        for(int i = 0; i < mBuffers.size(); ++i)
-        {
-            ox_buffer_delete(mBuffers[i]);
-        }
-
         mBuffers.clear();
     }
 
@@ -189,9 +177,7 @@ public:
             int datasize = strtol(current, &temp, 10);
             current = temp;
             current += 1;
-            buffer_s* databuffer = ox_buffer_new(datasize);
-            ox_buffer_write(databuffer, current, datasize);
-            mBuffers.push_back(databuffer);
+            mBuffers.push_back({ current, datasize });
             current += datasize;
 
             current += 1;
@@ -205,25 +191,17 @@ public:
         }
     }
 
-    buffer_s*       getByIndex(int index)
+    Bytes*       getByIndex(int index)
     {
         if(mBuffers.size() > index)
         {
-            return mBuffers[index];
+            return &mBuffers[index];
         }
         else
         {
-            static  const char* nullstr = "null";
-            static  buffer_s* nullbuffer = ox_buffer_new(strlen(nullstr)+1);
-            static int flag = 0;
-
-            if(flag == 0)
-            {
-                ox_buffer_write(nullbuffer, nullstr, strlen(nullstr)+1);
-            }
-
-            flag = 1;
-            return nullbuffer;
+            const char* nullstr = "null";
+            static  Bytes nullbuffer = { nullstr, strlen(nullstr)+1 };
+            return &nullbuffer;
         }
     }
 
@@ -239,7 +217,7 @@ public:
             return Status("error");
         }
 
-        return string(ox_buffer_getreadptr(mBuffers[0]), ox_buffer_getreadvalidcount(mBuffers[0]));
+        return string(mBuffers[0].buffer, mBuffers[0].len);
     }
 
     static int check_ssdb_packet(const char* buffer, int len)
@@ -286,9 +264,9 @@ public:
         /*  非完整消息返回0  */
         return 0;
     }
+
 private:
-	
-    vector<buffer_s*>   mBuffers;
+    vector<Bytes>   mBuffers;
 };
 
 static Status read_list(SSDBProtocolResponse *response, std::vector<std::string> *ret)
@@ -298,8 +276,8 @@ static Status read_list(SSDBProtocolResponse *response, std::vector<std::string>
     {
         for(int i = 1; i < response->getBuffersLen(); ++i)
         {
-            buffer_s* buffer = response->getByIndex(i);
-            ret->push_back(string(ox_buffer_getreadptr(buffer), ox_buffer_getreadvalidcount(buffer)));
+            Bytes* buffer = response->getByIndex(i);
+            ret->push_back(string(buffer->buffer, buffer->len));
         }
     }
 
@@ -313,8 +291,8 @@ static Status read_int64(SSDBProtocolResponse *response, int64_t *ret)
     {
         if(response->getBuffersLen() >= 2)
         {
-            buffer_s* buf = response->getByIndex(1);
-            string temp(ox_buffer_getreadptr(buf), ox_buffer_getreadvalidcount(buf));
+            Bytes* buf = response->getByIndex(1);
+            string temp(buf->buffer, buf->len);
             sscanf(temp.c_str(), "%lld",ret);
         }
         else
@@ -333,8 +311,8 @@ static Status read_str(SSDBProtocolResponse *response, std::string *ret)
     {
         if(response->getBuffersLen() >= 2)
         {
-            buffer_s* buf = response->getByIndex(1);
-            *ret = string(ox_buffer_getreadptr(buf), ox_buffer_getreadvalidcount(buf));
+            Bytes* buf = response->getByIndex(1);
+            *ret = string(buf->buffer, buf->len);
         }
         else
         {
@@ -360,6 +338,8 @@ void SSDBClient::request(const char* buffer, int len)
     {
         connect(m_ip.c_str(), m_port);
     }
+
+    m_request->init();
 }
 
 int SSDBClient::send(const char* buffer, int len)
@@ -429,6 +409,7 @@ SSDBClient::SSDBClient()
 {
     ox_socket_init();
     m_reponse = new SSDBProtocolResponse;
+    m_request = new SSDBProtocolRequest;
     m_socket = SOCKET_ERROR;
     m_recvBuffer = ox_buffer_new(DEFAULT_SSDBPROTOCOL_LEN);
 }
@@ -444,6 +425,11 @@ SSDBClient::~SSDBClient()
     {
         delete m_reponse;
         m_reponse = NULL;
+    }
+    if (m_request != NULL)
+    {
+        delete m_request;
+        m_request = NULL;
     }
     if(m_recvBuffer != NULL)
     {
@@ -464,7 +450,6 @@ void SSDBClient::connect(const char* ip, int port)
         if(m_socket != SOCKET_ERROR)
         {
             ox_socket_nodelay(m_socket);
-            ox_socket_block(m_socket);
         }
 
         m_ip = ip;
@@ -472,82 +457,81 @@ void SSDBClient::connect(const char* ip, int port)
     }
 }
 
+void SSDBClient::execute(const char* str, int len)
+{
+    request(str, len);
+}
+
 Status SSDBClient::get(const std::string key, std::string *val)
 {
-    SSDBProtocolRequest temp;
-    temp.appendStr("get");
-    temp.appendStr(key);
-    temp.endl();
+    m_request->appendStr("get");
+    m_request->appendStr(key);
+    m_request->endl();
 
-    request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
     return read_str(m_reponse, val);
 }
 
 Status SSDBClient::hset(const std::string name, const std::string key, std::string val)
 {
-	SSDBProtocolRequest temp;
-	temp.appendStr("hset");
-	temp.appendStr(name);
-	temp.appendStr(key);
-	temp.appendStr(val);
-	temp.endl();
+    m_request->appendStr("hset");
+    m_request->appendStr(name);
+    m_request->appendStr(key);
+    m_request->appendStr(val);
+    m_request->endl();
 
-	request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
 	return m_reponse->getStatus();
 }
 
 Status SSDBClient::hget(const std::string name, const std::string key, std::string *val)
 {
-	SSDBProtocolRequest temp;
-	temp.appendStr("hget");
-	temp.appendStr(name);
-	temp.appendStr(key);
-	temp.endl();
+    m_request->appendStr("hget");
+    m_request->appendStr(name);
+    m_request->appendStr(key);
+    m_request->endl();
 
-	request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
 	return read_str(m_reponse, val);
 }
 
 Status SSDBClient::zset(const std::string name, const std::string key, int64_t score)
 {
-	SSDBProtocolRequest temp;
-	temp.appendStr("zset");
-	temp.appendStr(name);
-	temp.appendStr(key);
+    m_request->appendStr("zset");
+    m_request->appendStr(name);
+    m_request->appendStr(key);
 	char s_str[30];
 	sprintf(s_str, "%lld", score);
-	temp.appendStr(s_str);
-	temp.endl();
+    m_request->appendStr(s_str);
+    m_request->endl();
 
-	request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
 	return m_reponse->getStatus();
 }
 
 Status SSDBClient::zget(const std::string name, const std::string key, int64_t *score)
 {
-	SSDBProtocolRequest temp;
-	temp.appendStr("zget");
-	temp.appendStr(name);
-	temp.appendStr(key);
-	temp.endl();
+    m_request->appendStr("zget");
+    m_request->appendStr(name);
+    m_request->appendStr(key);
+    m_request->endl();
 
-	request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
 	return read_int64(m_reponse, score);
 }
 
 Status SSDBClient::zsize(const std::string name, int64_t *size)
 {
-	SSDBProtocolRequest temp;
-	temp.appendStr("zsize");
-	temp.appendStr(name);
-	temp.endl();
+    m_request->appendStr("zsize");
+    m_request->appendStr(name);
+    m_request->endl();
 
-	request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
 	return read_int64(m_reponse, size);
 }
@@ -555,20 +539,19 @@ Status SSDBClient::zsize(const std::string name, int64_t *size)
 Status SSDBClient::zkeys(const std::string name, const std::string key_start,
 	int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret)
 {
-	SSDBProtocolRequest temp;
-	temp.appendStr("zkeys");
-	temp.appendStr(name);
-	temp.appendStr(key_start);
-	temp.appendInt64(score_start);
-	temp.appendInt64(score_end);
+    m_request->appendStr("zkeys");
+    m_request->appendStr(name);
+    m_request->appendStr(key_start);
+    m_request->appendInt64(score_start);
+    m_request->appendInt64(score_end);
 
 	char buf[30] = {0};
 	snprintf(buf, sizeof(buf), "%llu", limit);
-	temp.appendStr(buf);
+    m_request->appendStr(buf);
 
-	temp.endl();
+    m_request->endl();
 
-	request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
 	return read_list(m_reponse, ret);
 }
@@ -576,32 +559,30 @@ Status SSDBClient::zkeys(const std::string name, const std::string key_start,
 Status SSDBClient::zscan(const std::string name, const std::string key_start,
 	int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret)
 {
-	SSDBProtocolRequest temp;
-	temp.appendStr("zscan");
-	temp.appendStr(name);
-	temp.appendStr(key_start);
-	temp.appendInt64(score_start);
-	temp.appendInt64(score_end);
+    m_request->appendStr("zscan");
+    m_request->appendStr(name);
+    m_request->appendStr(key_start);
+    m_request->appendInt64(score_start);
+    m_request->appendInt64(score_end);
 
 	char buf[30] = {0};
 	snprintf(buf, sizeof(buf), "%llu", limit);
-	temp.appendStr(buf);
+    m_request->appendStr(buf);
 
-	temp.endl();
+    m_request->endl();
 
-	request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
 	return read_list(m_reponse, ret);
 }
 
 Status SSDBClient::zclear(const std::string name)
 {
-	SSDBProtocolRequest temp;
-	temp.appendStr("zclear");
-	temp.appendStr(name);
-	temp.endl();
+    m_request->appendStr("zclear");
+    m_request->appendStr(name);
+    m_request->endl();
 
-	request(temp.getResult(), temp.getResultLen());
+    request(m_request->getResult(), m_request->getResultLen());
 
 	return m_reponse->getStatus();
 }

@@ -6,6 +6,8 @@
 #include <stdint.h>
 
 class SSDBProtocolResponse;
+class SSDBProtocolRequest;
+
 struct buffer_s;
 
 class Status
@@ -49,6 +51,7 @@ public:
 
     void                    connect(const char* ip, int port);
 
+    void                    execute(const char* str, int len);
     Status                  get(const std::string key, std::string *val);
 
 	Status		            hset(const std::string name, const std::string key, std::string val);
@@ -81,6 +84,7 @@ private:
 private:
     buffer_s*               m_recvBuffer;
     SSDBProtocolResponse*   m_reponse;
+    SSDBProtocolRequest*    m_request;
 
     int                     m_socket;
 
