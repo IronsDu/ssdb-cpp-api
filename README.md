@@ -2,12 +2,18 @@
 ------
 
 ### 简介
+
     
 本项目提供`ssdb`的`sync client api`和`async client api` （异步回调）。
-    `sync client api`由`SSDBClient`类提供 (`ssdb_client.h`)。
-    `async client api`由`SSDBAsyncClient`类提供 (`ssdb_async_client.h`)。
+
+`sync client api`由`SSDBClient`类提供 ([`ssdb_client.h`](https://github.com/IronsDu/ssdb-cpp-api/blob/master/ssdb_client.h))。
     
-    *注：所有接口都非线程安全。*
+`async client api`由`SSDBAsyncClient`类提供([`ssdb_async_client.h`](https://github.com/IronsDu/ssdb-cpp-api/blob/master/ssdb_async_client.h)) 。
+    
+> #### **NOTES:**
+> 1. 所有接口都非线程安全.
+> 2. SSDBClient::connect是阻塞模式.
+> 3. 看完下面的API说明后可详细查阅 [`main.cpp`](https://github.com/IronsDu/ssdb-cpp-api/blob/master/main.cpp) 
 
 ---
 
@@ -32,8 +38,6 @@
     `SSDBAsyncClient::pollDBReply(int ms)`：逻辑线程处理db反馈消息，因为此版本为异步回调接口，所以其会执行db执行某ssdb操作后投递到逻辑线程队列的完成通知（回调）。
 
     *其他ssdb命令相关接口与官方版本一致，只是多了一个参数：仿函数对象;当db线程处理完某ssdb 操作后会投递完成通知，接下来逻辑线程调用`pollDBReply`后此仿函数对象就会被执行。*
-    
-详细使用方法请参考 : *`main.cpp`*
 
 
 
