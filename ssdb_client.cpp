@@ -98,12 +98,12 @@ public:
         appendBlock("\n", 1);
     }
 
-	void		appendInt64(int64_t val)
-	{
-		char str[30];
-		snprintf(str, sizeof(str), "%lld", val);
-		appendStr(str);
-	}
+    void        appendInt64(int64_t val)
+    {
+        char str[30];
+        snprintf(str, sizeof(str), "%lld", val);
+        appendStr(str);
+    }
 
     void        appendStr(const string& str)
     {
@@ -205,10 +205,10 @@ public:
         }
     }
 
-	size_t				getBuffersLen() const
-	{
-		return mBuffers.size();
-	}
+    size_t      getBuffersLen() const
+    {
+        return mBuffers.size();
+    }
 
     Status       getStatus()
     {
@@ -281,7 +281,7 @@ static Status read_list(SSDBProtocolResponse *response, std::vector<std::string>
         }
     }
 
-	return status;
+    return status;
 }
 
 static Status read_int64(SSDBProtocolResponse *response, int64_t *ret)
@@ -300,8 +300,8 @@ static Status read_int64(SSDBProtocolResponse *response, int64_t *ret)
             status = Status("server_error");
         }
     }
-	
-	return status;
+
+    return status;
 }
 
 static Status read_str(SSDBProtocolResponse *response, std::string *ret)
@@ -320,7 +320,7 @@ static Status read_str(SSDBProtocolResponse *response, std::string *ret)
         }
     }
 
-	return status;
+    return status;
 }
 
 void SSDBClient::request(const char* buffer, int len)
@@ -503,7 +503,7 @@ Status SSDBClient::hset(const std::string name, const std::string key, std::stri
 
     request(m_request->getResult(), m_request->getResultLen());
 
-	return m_reponse->getStatus();
+    return m_reponse->getStatus();
 }
 
 Status SSDBClient::hget(const std::string name, const std::string key, std::string *val)
@@ -515,7 +515,7 @@ Status SSDBClient::hget(const std::string name, const std::string key, std::stri
 
     request(m_request->getResult(), m_request->getResultLen());
 
-	return read_str(m_reponse, val);
+    return read_str(m_reponse, val);
 }
 
 Status SSDBClient::zset(const std::string name, const std::string key, int64_t score)
@@ -523,14 +523,14 @@ Status SSDBClient::zset(const std::string name, const std::string key, int64_t s
     m_request->appendStr("zset");
     m_request->appendStr(name);
     m_request->appendStr(key);
-	char s_str[30];
-	sprintf(s_str, "%lld", score);
+    char s_str[30];
+    sprintf(s_str, "%lld", score);
     m_request->appendStr(s_str);
     m_request->endl();
 
     request(m_request->getResult(), m_request->getResultLen());
 
-	return m_reponse->getStatus();
+    return m_reponse->getStatus();
 }
 
 Status SSDBClient::zget(const std::string name, const std::string key, int64_t *score)
@@ -542,7 +542,7 @@ Status SSDBClient::zget(const std::string name, const std::string key, int64_t *
 
     request(m_request->getResult(), m_request->getResultLen());
 
-	return read_int64(m_reponse, score);
+    return read_int64(m_reponse, score);
 }
 
 Status SSDBClient::zsize(const std::string name, int64_t *size)
@@ -553,11 +553,11 @@ Status SSDBClient::zsize(const std::string name, int64_t *size)
 
     request(m_request->getResult(), m_request->getResultLen());
 
-	return read_int64(m_reponse, size);
+    return read_int64(m_reponse, size);
 }
 
 Status SSDBClient::zkeys(const std::string name, const std::string key_start,
-	int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret)
+    int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret)
 {
     m_request->appendStr("zkeys");
     m_request->appendStr(name);
@@ -565,19 +565,19 @@ Status SSDBClient::zkeys(const std::string name, const std::string key_start,
     m_request->appendInt64(score_start);
     m_request->appendInt64(score_end);
 
-	char buf[30] = {0};
-	snprintf(buf, sizeof(buf), "%llu", limit);
+    char buf[30] = {0};
+    snprintf(buf, sizeof(buf), "%llu", limit);
     m_request->appendStr(buf);
 
     m_request->endl();
 
     request(m_request->getResult(), m_request->getResultLen());
 
-	return read_list(m_reponse, ret);
+    return read_list(m_reponse, ret);
 }
 
 Status SSDBClient::zscan(const std::string name, const std::string key_start,
-	int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret)
+    int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret)
 {
     m_request->appendStr("zscan");
     m_request->appendStr(name);
@@ -585,15 +585,15 @@ Status SSDBClient::zscan(const std::string name, const std::string key_start,
     m_request->appendInt64(score_start);
     m_request->appendInt64(score_end);
 
-	char buf[30] = {0};
-	snprintf(buf, sizeof(buf), "%llu", limit);
+    char buf[30] = {0};
+    snprintf(buf, sizeof(buf), "%llu", limit);
     m_request->appendStr(buf);
 
     m_request->endl();
 
     request(m_request->getResult(), m_request->getResultLen());
 
-	return read_list(m_reponse, ret);
+    return read_list(m_reponse, ret);
 }
 
 Status SSDBClient::zclear(const std::string name)
@@ -604,5 +604,5 @@ Status SSDBClient::zclear(const std::string name)
 
     request(m_request->getResult(), m_request->getResultLen());
 
-	return m_reponse->getStatus();
+    return m_reponse->getStatus();
 }
