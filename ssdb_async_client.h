@@ -35,26 +35,26 @@ public:
     void                    set(const std::string& key, const std::string& value, const std::function<void(const Status&)>& callback);
     void                    get(const std::string& key, const std::function<void(const std::string&, const Status&)>& callback);
 
-    void		            hset(const std::string& name, const std::string& key, const std::string& val,
-        const std::function<void(const Status&)>& callback);
+    void                    hset(const std::string& name, const std::string& key, const std::string& val,
+                                const std::function<void(const Status&)>& callback);
 
-    void		            hget(const std::string& name, const std::string& key,
-        const std::function<void(const std::string&, const Status&)>& callback);
+    void                    hget(const std::string& name, const std::string& key,
+                                const std::function<void(const std::string&, const Status&)>& callback);
 
-    void		            zset(const std::string& name, const std::string& key, int64_t score,
-        const std::function<void(const Status&)>& callback);
+    void                    zset(const std::string& name, const std::string& key, int64_t score,
+                                const std::function<void(const Status&)>& callback);
 
-    void		            zget(const std::string& name, const std::string& key, const std::function<void(int64_t, const Status&)>& callback);
+    void                    zget(const std::string& name, const std::string& key, const std::function<void(int64_t, const Status&)>& callback);
 
-    void		            zsize(const std::string& name, const std::function<void(int64_t, const Status&)>& callback);
+    void                    zsize(const std::string& name, const std::function<void(int64_t, const Status&)>& callback);
 
-    void		            zkeys(const std::string& name, const std::string& key_start, int64_t score_start, int64_t score_end,
-        uint64_t limit, const std::function<void(const std::vector<std::string>&, const Status&)>& callback);
+    void                    zkeys(const std::string& name, const std::string& key_start, int64_t score_start, int64_t score_end,
+                                uint64_t limit, const std::function<void(const std::vector<std::string>&, const Status&)>& callback);
 
-    void		            zscan(const std::string& name, const std::string& key_start, int64_t score_start, int64_t score_end,
-        uint64_t limit, const std::function<void(const std::vector<std::string>&, const Status&)>& callback);
+    void                    zscan(const std::string& name, const std::string& key_start, int64_t score_start, int64_t score_end,
+                                uint64_t limit, const std::function<void(const std::vector<std::string>&, const Status&)>& callback);
 
-    void		            zclear(const std::string& name, const std::function<void(const Status&)>& callback);
+    void                    zclear(const std::string& name, const std::function<void(const Status&)>& callback);
 
 private:
     void                    dbThread(std::string ip, int port);
