@@ -272,7 +272,7 @@ private:
 static Status read_list(SSDBProtocolResponse *response, std::vector<std::string> *ret)
 {
     Status status = response->getStatus();
-    if(status.ok() == 1)
+    if(status.ok())
     {
         for(int i = 1; i < response->getBuffersLen(); ++i)
         {
@@ -287,7 +287,7 @@ static Status read_list(SSDBProtocolResponse *response, std::vector<std::string>
 static Status read_int64(SSDBProtocolResponse *response, int64_t *ret)
 {
     Status status = response->getStatus();
-    if(status.ok() == 1)
+    if(status.ok())
     {
         if(response->getBuffersLen() >= 2)
         {
@@ -307,7 +307,7 @@ static Status read_int64(SSDBProtocolResponse *response, int64_t *ret)
 static Status read_str(SSDBProtocolResponse *response, std::string *ret)
 {
     Status status = response->getStatus();
-    if(status.ok() == 1)
+    if(status.ok())
     {
         if(response->getBuffersLen() >= 2)
         {
@@ -325,18 +325,14 @@ static Status read_str(SSDBProtocolResponse *response, std::string *ret)
 
 void SSDBClient::request(const char* buffer, int len)
 {
+    m_reponse->init();
+
     int left_len = send(buffer, len);
 
     /*  如果发送请求完毕，就进行接收response处理    */
     if(len > 0 && left_len == 0)
     {
         recv();
-    }
-
-    /*  TODO::重新连接  */
-    if(m_socket == SOCKET_ERROR)
-    {
-        connect(m_ip.c_str(), m_port);
     }
 
     m_request->init();
@@ -397,7 +393,6 @@ void SSDBClient::recv()
             /*  尝试解析,返回值大于0表示接受到完整的response消息包    */
             if(SSDBProtocolResponse::check_ssdb_packet(ox_buffer_getreadptr(m_recvBuffer), ox_buffer_getreadvalidcount(m_recvBuffer)) > 0)
             {
-                m_reponse->init();
                 m_reponse->parse(ox_buffer_getreadptr(m_recvBuffer), ox_buffer_getreadvalidcount(m_recvBuffer));
                 break;
             }
@@ -442,6 +437,15 @@ SSDBClient::~SSDBClient()
 #endif
 }
 
+void SSDBClient::disConnect()
+{
+    if (m_socket != SOCKET_ERROR)
+    {
+        ox_socket_close(m_socket);
+        m_socket = SOCKET_ERROR;
+    }
+}
+
 void SSDBClient::connect(const char* ip, int port)
 {
     if(m_socket == SOCKET_ERROR)
@@ -457,9 +461,25 @@ void SSDBClient::connect(const char* ip, int port)
     }
 }
 
+bool SSDBClient::isConnect() const
+{
+    return m_socket != SOCKET_ERROR;
+}
+
 void SSDBClient::execute(const char* str, int len)
 {
     request(str, len);
+}
+
+Status SSDBClient::set(const std::string key, const std::string& val)
+{
+    m_request->appendStr("set");
+    m_request->appendStr(key);
+    m_request->appendStr(val);
+    m_request->endl();
+
+    request(m_request->getResult(), m_request->getResultLen());
+    return m_reponse->getStatus();
 }
 
 Status SSDBClient::get(const std::string key, std::string *val)

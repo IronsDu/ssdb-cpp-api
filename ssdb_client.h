@@ -19,22 +19,22 @@ public:
         mCode = code;
     }
 
-    int             not_found()
+    int             not_found() const
     {
         return mCode == "not_found";
     }
 
-    int             ok()
+    int             ok() const
     {
         return mCode == "ok";
     }
 
-    int             error()
+    int             error() const
     {
         return mCode != "ok";
     }
 
-    std::string     code()
+    std::string     code() const
     {
         return mCode;
     }
@@ -49,9 +49,14 @@ public:
     SSDBClient();
     ~SSDBClient();
 
+    void                    disConnect();
     void                    connect(const char* ip, int port);
+    bool                    isConnect() const;
 
     void                    execute(const char* str, int len);
+
+    Status                  set(const std::string key, const std::string& val);
+
     Status                  get(const std::string key, std::string *val);
 
 	Status		            hset(const std::string name, const std::string key, std::string val);
