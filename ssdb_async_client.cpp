@@ -1,3 +1,4 @@
+#include <memory>
 #include "ssdb_async_client.h"
 
 SSDBAsyncClient::SSDBAsyncClient()
@@ -88,6 +89,25 @@ void SSDBAsyncClient::waitCloseDBThread()
     }
 }
 
+void SSDBAsyncClient::postAsyncDBFunctor(const std::function<void(void)>& functor)
+{
+    mDBFunctorMQ.Push([=](){
+        functor();
+    });
+}
+
+void SSDBAsyncClient::postAsyncLogicFunctor(const std::function<void(void)>& functor)
+{
+    mLogicFunctorMQ.Push([=](){
+        functor();
+    });
+}
+
+SSDBClient& SSDBAsyncClient::getSyncSSDBClient()
+{
+    return mSSDBClient;
+}
+
 void    SSDBAsyncClient::set(const std::string& key, const std::string& value, const std::function<void(const Status&)>& callback)
 {
     mDBFunctorMQ.Push([=](){
@@ -102,11 +122,11 @@ void    SSDBAsyncClient::set(const std::string& key, const std::string& value, c
 void    SSDBAsyncClient::get(const std::string& key, const std::function<void(const std::string&, const Status&)>& callback)
 {
     mDBFunctorMQ.Push([=](){
-        std::string value;
-        Status status = mSSDBClient.get(key, &value);
+        auto tmp = std::make_shared<std::string>();
+        Status status = mSSDBClient.get(key, &(*tmp));
 
         mLogicFunctorMQ.Push([=](){
-            callback(value, status);
+            callback(*tmp, status);
         });
     });
 }
@@ -127,12 +147,11 @@ void    SSDBAsyncClient::hget(const std::string& name, const std::string& key,
     const std::function<void(const std::string&, const Status&)>& callback)
 {
     mDBFunctorMQ.Push([=](){
-        std::string value;
-        Status status = mSSDBClient.hget(name, key, &value);
-        std::string&& tmp = std::move(value);
+        auto value = std::make_shared<std::string>();
+        Status status = mSSDBClient.hget(name, key, &(*value));
 
         mLogicFunctorMQ.Push([=](){
-            callback(tmp, status);
+            callback(*value, status);
         });
     });
 }
@@ -177,12 +196,11 @@ void    SSDBAsyncClient::zkeys(const std::string& name, const std::string& key_s
     uint64_t limit, const std::function<void(const std::vector<std::string>&, const Status&)>& callback)
 {
     mDBFunctorMQ.Push([=](){
-        std::vector<std::string> ret;
-        Status status = mSSDBClient.zkeys(name, key_start, score_start, score_end, limit, &ret);
-        std::vector<std::string>&& tmp = std::move(ret);
+        auto ret = std::make_shared<std::vector<std::string>>();
+        Status status = mSSDBClient.zkeys(name, key_start, score_start, score_end, limit, &(*ret));
 
         mLogicFunctorMQ.Push([=](){
-            callback(tmp, status);
+            callback(*ret, status);
         });
     });
 }
@@ -191,11 +209,10 @@ void    SSDBAsyncClient::zscan(const std::string& name, const std::string& key_s
     uint64_t limit, const std::function<void(const std::vector<std::string>&, const Status&)>& callback)
 {
     mDBFunctorMQ.Push([=](){
-        std::vector<std::string> ret;
-        Status status = mSSDBClient.zscan(name, key_start, score_start, score_end, limit, &ret);
-        std::vector<std::string>&& tmp = std::move(ret);
+        auto ret = std::make_shared<std::vector<std::string>>();
+        Status status = mSSDBClient.zscan(name, key_start, score_start, score_end, limit, &(*ret));
         mLogicFunctorMQ.Push([=](){
-            callback(tmp, status);
+            callback(*ret, status);
         });
     });
 }

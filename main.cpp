@@ -9,9 +9,6 @@ SSDBAsyncClient ssdb;
 
 static void async_callback(const string& value, const Status& status)
 {
-    cout << status.code() << endl;
-    cout << value << endl;
-
     ssdb.get("hello", async_callback);
 
     static int old_time = 0;
@@ -30,11 +27,19 @@ static void async_callback(const string& value, const Status& status)
 
 int main()
 {
+    cout << "fuck" << endl;
     ssdb.set("hello", "world", [](const Status& status)
     {
     });
 
     ssdb.get("hello", async_callback);
+
+    ssdb.postAsyncDBFunctor([](){
+        /*这里在db线程执行*/
+        ssdb.postAsyncLogicFunctor([](){
+            /*这里在逻辑线程执行*/
+        });
+    });
 
     ssdb.get("hello", [](const string& value, const Status& status){
         cout << "test lambda" << endl;

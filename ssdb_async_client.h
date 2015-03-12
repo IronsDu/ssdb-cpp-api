@@ -32,6 +32,13 @@ public:
     void                    closeDBThread();
     SSDB_CONNECT_STATUS     getConnectStatus() const;
 
+    /*  投递异步仿函数到DB线程执行    */
+    void                    postAsyncDBFunctor(const std::function<void(void)>& functor);
+    /*  投递异步仿函数到主线程执行   */
+    void                    postAsyncLogicFunctor(const std::function<void(void)>& functor);
+
+    SSDBClient&             getSyncSSDBClient();
+
     void                    set(const std::string& key, const std::string& value, const std::function<void(const Status&)>& callback);
     void                    get(const std::string& key, const std::function<void(const std::string&, const Status&)>& callback);
 
