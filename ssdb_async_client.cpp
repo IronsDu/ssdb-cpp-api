@@ -1,4 +1,5 @@
 #include <memory>
+#include <windows.h>
 #include "ssdb_async_client.h"
 
 SSDBAsyncClient::SSDBAsyncClient()
@@ -15,6 +16,7 @@ SSDBAsyncClient::~SSDBAsyncClient()
 
 void    SSDBAsyncClient::pollDBReply(int ms)
 {
+    mDBFunctorMQ.ForceSyncWrite();
     mLogicFunctorMQ.SyncRead(ms);
 
     std::function<void(void)> tmp;
@@ -22,10 +24,9 @@ void    SSDBAsyncClient::pollDBReply(int ms)
     {
         tmp();
     }
-    mDBFunctorMQ.ForceSyncWrite();
 }
 
-void SSDBAsyncClient::postStartDBThread(std::string ip, int port)
+void SSDBAsyncClient::postStartDBThread(std::string ip, int port, std::function<void(void)> frameCallback)
 {
     if (mConnectStatus == SSDB_CONNECT_NONE || mConnectStatus == SSDB_CONNECT_CLOSE)
     {
@@ -34,8 +35,8 @@ void SSDBAsyncClient::postStartDBThread(std::string ip, int port)
         mConnectStatus = SSDB_CONNECT_POST;
         mCloseDBThread = false;
 
-        mDBThread = new std::thread([this, ip, port](){
-            dbThread(ip, port);
+        mDBThread = new std::thread([this, ip, port, frameCallback](){
+            dbThread(ip, port, frameCallback);
         });
     }
 }
@@ -52,7 +53,7 @@ void SSDBAsyncClient::closeDBThread()
     mConnectStatus = SSDB_CONNECT_NONE;
 }
 
-void    SSDBAsyncClient::dbThread(std::string ip, int port)
+void    SSDBAsyncClient::dbThread(std::string ip, int port, std::function<void(void)> frameCallback)
 {
     /*  TODO::·Ç×èÈû   */
     mSSDBClient.connect(ip.c_str(), port);
@@ -65,15 +66,19 @@ void    SSDBAsyncClient::dbThread(std::string ip, int port)
             break;
         }
 
-        mDBFunctorMQ.SyncRead(1);
+        mLogicFunctorMQ.ForceSyncWrite();
+        if (frameCallback != nullptr)
+        {
+            frameCallback();
+        }
+
+        mDBFunctorMQ.SyncRead(100);
 
         std::function<void(void)> proc;
         while (mDBFunctorMQ.PopFront(&proc))
         {
             proc();
         }
-
-        mLogicFunctorMQ.ForceSyncWrite();
     }
 
     mSSDBClient.disConnect();

@@ -32,7 +32,10 @@ int main()
     {
     });
 
-    ssdb.get("hello", async_callback);
+    for (int i = 0; i < 1 * 1; ++i)
+    {
+        ssdb.get("hello", async_callback);
+    }
 
     ssdb.postAsyncDBFunctor([](){
         /*这里在db线程执行*/
@@ -53,7 +56,7 @@ int main()
             ssdb.postStartDBThread("127.0.0.1", 8888);
         }
 
-        ssdb.pollDBReply(1);
+        ssdb.pollDBReply(100);
     }
 
     return 0;

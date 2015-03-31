@@ -27,7 +27,7 @@ public:
     void                    pollDBReply(int ms);
 
     /*  开启db线程  */
-    void                    postStartDBThread(std::string ip, int port);
+    void                    postStartDBThread(std::string ip, int port, std::function<void(void)> frameCallback = nullptr);
     /*  关闭db线程  */
     void                    closeDBThread();
     SSDB_CONNECT_STATUS     getConnectStatus() const;
@@ -64,7 +64,7 @@ public:
     void                    zclear(const std::string& name, const std::function<void(const Status&)>& callback);
 
 private:
-    void                    dbThread(std::string ip, int port);
+    void                    dbThread(std::string ip, int port, std::function<void(void)> frameCallback);
     void                    waitCloseDBThread();
 private:
     SSDB_CONNECT_STATUS                     mConnectStatus;
