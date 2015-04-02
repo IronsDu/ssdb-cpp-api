@@ -23,6 +23,8 @@ public:
     SSDBAsyncClient();
     ~SSDBAsyncClient();
 
+    /*  强制刷新请求  */
+    void                    ForceSyncRequest();
     /*  逻辑线程处理db结果  */
     void                    pollDBReply(int ms);
 

@@ -56,6 +56,7 @@ int main()
             ssdb.postStartDBThread("127.0.0.1", 8888);
         }
 
+        ssdb.ForceSyncRequest();
         ssdb.pollDBReply(100);
     }
 

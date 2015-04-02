@@ -14,9 +14,13 @@ SSDBAsyncClient::~SSDBAsyncClient()
     closeDBThread();
 }
 
-void    SSDBAsyncClient::pollDBReply(int ms)
+void SSDBAsyncClient::ForceSyncRequest()
 {
     mDBFunctorMQ.ForceSyncWrite();
+}
+
+void    SSDBAsyncClient::pollDBReply(int ms)
+{
     mLogicFunctorMQ.SyncRead(ms);
 
     std::function<void(void)> tmp;
