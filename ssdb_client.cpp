@@ -177,7 +177,8 @@ public:
             int datasize = strtol(current, &temp, 10);
             current = temp;
             current += 1;
-            mBuffers.push_back({ current, datasize });
+            Bytes tmp = { current, datasize };
+            mBuffers.push_back(tmp);
             current += datasize;
 
             current += 1;
@@ -191,7 +192,7 @@ public:
         }
     }
 
-    Bytes*       getByIndex(int index)
+    Bytes*       getByIndex(size_t index)
     {
         if(mBuffers.size() > index)
         {
@@ -274,7 +275,7 @@ static Status read_list(SSDBProtocolResponse *response, std::vector<std::string>
     Status status = response->getStatus();
     if(status.ok())
     {
-        for(int i = 1; i < response->getBuffersLen(); ++i)
+        for (size_t i = 1; i < response->getBuffersLen(); ++i)
         {
             Bytes* buffer = response->getByIndex(i);
             ret->push_back(string(buffer->buffer, buffer->len));
@@ -506,6 +507,22 @@ Status SSDBClient::hset(const std::string name, const std::string key, std::stri
     return m_reponse->getStatus();
 }
 
+Status SSDBClient::multiHset(const std::string name, const std::unordered_map<std::string, std::string> &kvs)
+{
+    m_request->appendStr("multi_hset");
+    m_request->appendStr(name);
+    for (auto& v : kvs)
+    {
+        m_request->appendStr(v.first);
+        m_request->appendStr(v.second);
+    }
+    m_request->endl();
+
+    request(m_request->getResult(), m_request->getResultLen());
+
+    return m_reponse->getStatus();
+}
+
 Status SSDBClient::hget(const std::string name, const std::string key, std::string *val)
 {
     m_request->appendStr("hget");
@@ -516,6 +533,21 @@ Status SSDBClient::hget(const std::string name, const std::string key, std::stri
     request(m_request->getResult(), m_request->getResultLen());
 
     return read_str(m_reponse, val);
+}
+
+Status SSDBClient::multiHget(const std::string name, const std::vector<std::string> &keys, std::vector<std::string> *ret)
+{
+    m_request->appendStr("multi_hget");
+    m_request->appendStr(name);
+    for (auto& v : keys)
+    {
+        m_request->appendStr(v);
+    }
+    m_request->endl();
+
+    request(m_request->getResult(), m_request->getResultLen());
+
+    return read_list(m_reponse, ret);
 }
 
 Status SSDBClient::zset(const std::string name, const std::string key, int64_t score)
@@ -604,5 +636,50 @@ Status SSDBClient::zclear(const std::string name)
 
     request(m_request->getResult(), m_request->getResultLen());
 
+    return m_reponse->getStatus();
+}
+
+Status SSDBClient::qpush(const std::string& name, const std::string& item)
+{
+    m_request->appendStr("qpush");
+    m_request->appendStr(name);
+    m_request->appendStr(item);
+    m_request->endl();
+
+    request(m_request->getResult(), m_request->getResultLen());
+    return m_reponse->getStatus();
+}
+
+Status SSDBClient::qpop(const std::string& name, std::string* item)
+{
+    m_request->appendStr("qpop");
+    m_request->appendStr(name);
+    m_request->endl();
+
+    request(m_request->getResult(), m_request->getResultLen());
+
+    return read_str(m_reponse, item);
+}
+
+Status SSDBClient::qslice(const std::string& name, int64_t begin, int64_t end, std::vector<std::string> *ret)
+{
+    m_request->appendStr("qslice");
+    m_request->appendStr(name);
+    m_request->appendInt64(begin);
+    m_request->appendInt64(end);
+    m_request->endl();
+
+    request(m_request->getResult(), m_request->getResultLen());
+
+    return read_list(m_reponse, ret);
+}
+
+Status SSDBClient::qclear(const std::string& name)
+{
+    m_request->appendStr("qclear");
+    m_request->appendStr(name);
+    m_request->endl();
+
+    request(m_request->getResult(), m_request->getResultLen());
     return m_reponse->getStatus();
 }

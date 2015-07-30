@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <stdint.h>
 
 /*  同步ssdb client api   */
@@ -62,8 +63,9 @@ public:
     Status                  get(const std::string key, std::string *val);
 
     Status                  hset(const std::string name, const std::string key, std::string val);
-
+    Status                  multiHset(const std::string name, const std::unordered_map<std::string, std::string> &kvs);
     Status                  hget(const std::string name, const std::string key, std::string *val);
+    Status                  multiHget(const std::string name, const std::vector<std::string> &keys, std::vector<std::string> *ret);
 
     Status                  zset(const std::string name, const std::string key, int64_t score);
 
@@ -78,6 +80,11 @@ public:
                                     int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret);
 
     Status                  zclear(const std::string name);
+
+    Status                  qpush(const std::string& name, const std::string& item);
+    Status                  qpop(const std::string& name, std::string* item);
+    Status                  qslice(const std::string& name, int64_t begin, int64_t end, std::vector<std::string> *ret);
+    Status                  qclear(const std::string& name);
 
 private:
     SSDBClient(const SSDBClient&); 

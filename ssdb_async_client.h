@@ -49,6 +49,10 @@ public:
 
     void                    hget(const std::string& name, const std::string& key,
                                 const std::function<void(const std::string&, const Status&)>& callback);
+    void                    multiHget(const std::string& name, const std::vector<std::string>& keys,
+                                      const std::function<void(const std::vector<std::string>& values, const Status&)>& callback);
+    void                    multiHset(const std::string& name, const std::unordered_map<std::string, std::string>& kvs,
+                                      const std::function<void(const Status&)>& callback);
 
     void                    zset(const std::string& name, const std::string& key, int64_t score,
                                 const std::function<void(const Status&)>& callback);
@@ -64,6 +68,11 @@ public:
                                 uint64_t limit, const std::function<void(const std::vector<std::string>&, const Status&)>& callback);
 
     void                    zclear(const std::string& name, const std::function<void(const Status&)>& callback);
+
+    void                    qpush(const std::string& name, const std::string& item, const std::function<void(const Status&)>& callback);
+    void                    qpop(const std::string& name, const std::function<void(const std::string&, const Status&)>& callback);
+    void                    qslice(const std::string& name, int64_t begin, int64_t end, const std::function<void(const std::vector<std::string>& values, const Status&)>& callback);
+    void                    qclear(const std::string& name, const std::function<void(const Status&)>& callback);
 
 private:
     void                    dbThread(std::string ip, int port, std::function<void(void)> frameCallback);
