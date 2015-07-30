@@ -58,28 +58,28 @@ public:
 
     void                    execute(const char* str, int len);
 
-    Status                  set(const std::string key, const std::string& val);
+    Status                  set(const std::string& key, const std::string& val);
 
-    Status                  get(const std::string key, std::string *val);
+    Status                  get(const std::string& key, std::string *val);
 
-    Status                  hset(const std::string name, const std::string key, std::string val);
-    Status                  multiHset(const std::string name, const std::unordered_map<std::string, std::string> &kvs);
-    Status                  hget(const std::string name, const std::string key, std::string *val);
-    Status                  multiHget(const std::string name, const std::vector<std::string> &keys, std::vector<std::string> *ret);
+    Status                  hset(const std::string& name, const std::string& key, std::string val);
+    Status                  multiHset(const std::string& name, const std::unordered_map<std::string, std::string> &kvs);
+    Status                  hget(const std::string& name, const std::string& key, std::string *val);
+    Status                  multiHget(const std::string& name, const std::vector<std::string> &keys, std::vector<std::string> *ret);
 
-    Status                  zset(const std::string name, const std::string key, int64_t score);
+    Status                  zset(const std::string& name, const std::string& key, int64_t score);
 
-    Status                  zget(const std::string name, const std::string key, int64_t *score);
+    Status                  zget(const std::string& name, const std::string& key, int64_t *score);
 
-    Status                  zsize(const std::string name, int64_t *size);
+    Status                  zsize(const std::string& name, int64_t *size);
 
-    Status                  zkeys(const std::string name, const std::string key_start, 
+    Status                  zkeys(const std::string& name, const std::string& key_start,
                                     int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret);
 
-    Status                  zscan(const std::string name, const std::string key_start, 
+    Status                  zscan(const std::string& name, const std::string& key_start,
                                     int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret);
 
-    Status                  zclear(const std::string name);
+    Status                  zclear(const std::string& name);
 
     Status                  qpush(const std::string& name, const std::string& item);
     Status                  qpop(const std::string& name, std::string* item);

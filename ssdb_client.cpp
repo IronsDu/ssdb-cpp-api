@@ -472,7 +472,7 @@ void SSDBClient::execute(const char* str, int len)
     request(str, len);
 }
 
-Status SSDBClient::set(const std::string key, const std::string& val)
+Status SSDBClient::set(const std::string& key, const std::string& val)
 {
     m_request->appendStr("set");
     m_request->appendStr(key);
@@ -483,7 +483,7 @@ Status SSDBClient::set(const std::string key, const std::string& val)
     return m_reponse->getStatus();
 }
 
-Status SSDBClient::get(const std::string key, std::string *val)
+Status SSDBClient::get(const std::string& key, std::string *val)
 {
     m_request->appendStr("get");
     m_request->appendStr(key);
@@ -494,7 +494,7 @@ Status SSDBClient::get(const std::string key, std::string *val)
     return read_str(m_reponse, val);
 }
 
-Status SSDBClient::hset(const std::string name, const std::string key, std::string val)
+Status SSDBClient::hset(const std::string& name, const std::string& key, std::string val)
 {
     m_request->appendStr("hset");
     m_request->appendStr(name);
@@ -507,7 +507,7 @@ Status SSDBClient::hset(const std::string name, const std::string key, std::stri
     return m_reponse->getStatus();
 }
 
-Status SSDBClient::multiHset(const std::string name, const std::unordered_map<std::string, std::string> &kvs)
+Status SSDBClient::multiHset(const std::string& name, const std::unordered_map<std::string, std::string> &kvs)
 {
     m_request->appendStr("multi_hset");
     m_request->appendStr(name);
@@ -523,7 +523,7 @@ Status SSDBClient::multiHset(const std::string name, const std::unordered_map<st
     return m_reponse->getStatus();
 }
 
-Status SSDBClient::hget(const std::string name, const std::string key, std::string *val)
+Status SSDBClient::hget(const std::string& name, const std::string& key, std::string *val)
 {
     m_request->appendStr("hget");
     m_request->appendStr(name);
@@ -535,7 +535,7 @@ Status SSDBClient::hget(const std::string name, const std::string key, std::stri
     return read_str(m_reponse, val);
 }
 
-Status SSDBClient::multiHget(const std::string name, const std::vector<std::string> &keys, std::vector<std::string> *ret)
+Status SSDBClient::multiHget(const std::string& name, const std::vector<std::string> &keys, std::vector<std::string> *ret)
 {
     m_request->appendStr("multi_hget");
     m_request->appendStr(name);
@@ -550,7 +550,7 @@ Status SSDBClient::multiHget(const std::string name, const std::vector<std::stri
     return read_list(m_reponse, ret);
 }
 
-Status SSDBClient::zset(const std::string name, const std::string key, int64_t score)
+Status SSDBClient::zset(const std::string& name, const std::string& key, int64_t score)
 {
     m_request->appendStr("zset");
     m_request->appendStr(name);
@@ -565,7 +565,7 @@ Status SSDBClient::zset(const std::string name, const std::string key, int64_t s
     return m_reponse->getStatus();
 }
 
-Status SSDBClient::zget(const std::string name, const std::string key, int64_t *score)
+Status SSDBClient::zget(const std::string& name, const std::string& key, int64_t *score)
 {
     m_request->appendStr("zget");
     m_request->appendStr(name);
@@ -577,7 +577,7 @@ Status SSDBClient::zget(const std::string name, const std::string key, int64_t *
     return read_int64(m_reponse, score);
 }
 
-Status SSDBClient::zsize(const std::string name, int64_t *size)
+Status SSDBClient::zsize(const std::string& name, int64_t *size)
 {
     m_request->appendStr("zsize");
     m_request->appendStr(name);
@@ -588,7 +588,7 @@ Status SSDBClient::zsize(const std::string name, int64_t *size)
     return read_int64(m_reponse, size);
 }
 
-Status SSDBClient::zkeys(const std::string name, const std::string key_start,
+Status SSDBClient::zkeys(const std::string& name, const std::string& key_start,
     int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret)
 {
     m_request->appendStr("zkeys");
@@ -608,7 +608,7 @@ Status SSDBClient::zkeys(const std::string name, const std::string key_start,
     return read_list(m_reponse, ret);
 }
 
-Status SSDBClient::zscan(const std::string name, const std::string key_start,
+Status SSDBClient::zscan(const std::string& name, const std::string& key_start,
     int64_t score_start, int64_t score_end,uint64_t limit, std::vector<std::string> *ret)
 {
     m_request->appendStr("zscan");
@@ -628,7 +628,7 @@ Status SSDBClient::zscan(const std::string name, const std::string key_start,
     return read_list(m_reponse, ret);
 }
 
-Status SSDBClient::zclear(const std::string name)
+Status SSDBClient::zclear(const std::string& name)
 {
     m_request->appendStr("zclear");
     m_request->appendStr(name);
